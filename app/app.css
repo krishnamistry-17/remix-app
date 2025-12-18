@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+html,
+body {
+  @apply bg-bg text-text;
+}
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* default (light) tokens so utilities like bg-bg/text-text exist */
+  --color-bg: #ffffff;
+  --color-text: #1a202c;
+}
+
+
+.dark {
+  --color-bg: #1a202c;
+  --color-text: #f7fafc;
+}
