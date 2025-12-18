@@ -1,13 +1,16 @@
 import { useState } from "react";
 import {
-  Form,
   redirect,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   useLoaderData,
+  useSubmit,
 } from "react-router";
 import { commitSession, getSession } from "~/utils/sessions.server";
 import { Eye, EyeOff } from "lucide-react";
+import * as Yup from "yup";
+import { Formik } from "formik";
+import type { Route } from "./+types/home";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -31,12 +34,26 @@ export async function getCredentials(username: string, password: string) {
   };
 }
 
+const loginSchema = Yup.object().shape({
+  username: Yup.string().required("Username is required"),
+  password: Yup.string().required("Password is required"),
+});
+
 export async function action({ request }: ActionFunctionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
   const form = await request.formData();
   const username = form.get("username");
   const password = form.get("password");
+
+  try {
+    await loginSchema.validate({ username, password });
+  } catch (error) {
+    if (error instanceof Yup.ValidationError) {
+      return { error: error.message };
+    }
+    throw error;
+  }
 
   const userId = await getCredentials(username as string, password as string);
 
@@ -63,6 +80,7 @@ export default function Login() {
   const { error } = useLoaderData<typeof loader>() as unknown as {
     error: string | null;
   };
+  const submit = useSubmit();
   const [passwordVisisble, setPasswordVisible] = useState<boolean>(false);
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisisble);
@@ -70,78 +88,133 @@ export default function Login() {
   return (
     <main className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="rounded-2xl border border-gray-200 bg-bg text-text p-6 shadow-sm ">
           <header className="mb-6 text-center">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              Welcome back
-            </h1>
+            <h1 className="text-2xl font-semibold ">Welcome back</h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Sign in to continue
             </p>
           </header>
 
-          {error && (
-            <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-              {error}
-            </div>
-          )}
+          <Formik
+            initialValues={{ username: "", password: "" }}
+            validationSchema={loginSchema}
+            onSubmit={(values, { setSubmitting }) => {
+              const fd = new FormData();
+              fd.append("username", values.username);
+              fd.append("password", values.password);
+              submit(fd, { method: "post" });
+              setSubmitting(false);
+            }}
+          >
+            {({
+              values,
+              errors,
+              touched,
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              isSubmitting,
+            }) => (
+              <form noValidate onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium "
+                  >
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    value={values.username}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.username && !!errors.username}
+                    aria-describedby={
+                      touched.username && errors.username
+                        ? "username-error"
+                        : undefined
+                    }
+                    className={`w-full rounded-md  px-3 py-2  focus:outline-none focus:ring-0 ${
+                      touched.username && errors.username
+                        ? "border-red-500 dark:border-red-500 border"
+                        : "border border-gray-300 dark:border-gray-700"
+                    }`}
+                    placeholder="Enter your username"
+                  />
+                  {touched.username && errors.username && (
+                    <p
+                      id="username-error"
+                      className="text-xs text-red-600 mt-1"
+                    >
+                      {errors.username}
+                    </p>
+                  )}
+                </div>
 
-          <Form method="post" className="space-y-4">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-800 dark:text-gray-200"
-              >
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2
-                 text-gray-900 placeholder:text-gray-400
-                 focus:outline-none focus:ring-0  dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                placeholder="Enter your username"
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium "
+                  >
+                    Password
+                  </label>
+                  <div
+                    className={`flex items-center justify-between gap-2 rounded-md  px-3 py-2  focus:outline-none focus:ring-0  ${
+                      touched.password && errors.password
+                        ? "border-red-500 dark:border-red-500 border"
+                        : "border border-gray-300 dark:border-gray-700"
+                    }`}
+                  >
+                    <input
+                      id="password"
+                      name="password"
+                      type={passwordVisisble ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={values.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={touched.password && !!errors.password}
+                      aria-describedby={
+                        touched.password && errors.password
+                          ? "password-error"
+                          : undefined
+                      }
+                      placeholder="••••••••"
+                      className="flex-1 bg-transparent focus:outline-none focus:ring-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="text-gray-500"
+                    >
+                      {!passwordVisisble ? <EyeOff /> : <Eye />}
+                    </button>
+                  </div>
+                  {touched.password && errors.password && (
+                    <p
+                      id="password-error"
+                      className="text-xs text-red-600 mt-1"
+                    >
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
 
-            <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-800 dark:text-gray-200"
-              >
-                Password
-              </label>
-              <div
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2
-                 text-gray-900 placeholder:text-gray-400
-                 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <input
-                  id="password"
-                  name="password"
-                  type={passwordVisisble ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  placeholder="••••••••"
-                  className=" focus:outline-none focus:ring-0"
-                />
-                <button type="button" onClick={togglePasswordVisibility}>
-                  {!passwordVisisble ? <EyeOff /> : <Eye />}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mt-2 w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition
+                   hover:bg-blue-700 focus:outline-none focus:ring-0 disabled:opacity-70 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  Sign in
                 </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="mt-2 w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm
-               font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-0 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              Sign in
-            </button>
-          </Form>
+              </form>
+            )}
+          </Formik>
         </div>
 
         <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
@@ -150,4 +223,8 @@ export default function Login() {
       </div>
     </main>
   );
+}
+
+export function meta({}: Route.MetaArgs) {
+  return [{ title: "Login" }, { name: "description", content: "Login page" }];
 }

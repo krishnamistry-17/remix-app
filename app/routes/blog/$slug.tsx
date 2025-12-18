@@ -7,22 +7,23 @@ type Post = {
   body: string;
 };
 
-export async function loader({ params }: { params: { id: string } }) {
+export async function loader({ params }: { params: { id?: string } }) {
   const id = params.id;
-  if (!id) throw new Error("Not Found");
-
-  const response = fetch(`https://jsonplaceholder.typicode.com/posts/${id}`)
-    .then((r) => r.json())
-    .then((post: Post) => post);
-
-  if (!id) throw new Error("Not Found");
-  return { response };
+  if (!id) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  const post = (await fetch(
+    `https://jsonplaceholder.typicode.com/posts/${id}`
+  ).then((r) => r.json())) as Post;
+  if (!post?.id) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  return { post };
 }
 
 const BlogDetail = () => {
-  const { post } = useLoaderData<typeof loader>() as unknown as {
-    post: Post;
-  };
+  const { post } = useLoaderData<typeof loader>();
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-center pt-10">Blog Detail</h1>

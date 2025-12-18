@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Link,
-  useNavigate,
-  useFetcher,
-  useRouteLoaderData,
-  useLocation,
-} from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { Menu, X } from "lucide-react";
 import { useTheme } from "~/context/ThemeContext";
 import logoDark from "../welcome/logo-dark.svg";
@@ -38,11 +32,8 @@ const Navbar: React.FC = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const data = useRouteLoaderData<{ userId: string | null }>("root");
-  const fetcher = useFetcher();
-  const location = useLocation();
 
-  const isLoggedIn = Boolean(data?.userId);
+  const location = useLocation();
 
   const pages: Page[] = [
     { name: "About", to: "/about" },
@@ -142,12 +133,13 @@ const Navbar: React.FC = () => {
           ))}
         </nav>
 
-        <div className="sm:flex hidden">
-          <Logout />
-        </div>
-
-        <div className="hidden sm:flex items-center gap-4">
-          <ThemeToggle />
+        <div className="flex items-center gap-4">
+          <div className="sm:flex hidden">
+            <Logout />
+          </div>
+          <div className="hidden sm:flex items-center gap-4">
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Mobile menu button */}

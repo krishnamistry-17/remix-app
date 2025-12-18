@@ -6,4 +6,5 @@ export default [
   route("blog/:id", "routes/blog/$slug.tsx"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("notfound", "routes/notfound.tsx"),
 ] satisfies RouteConfig;

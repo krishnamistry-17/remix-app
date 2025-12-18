@@ -12,8 +12,6 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import Navbar from "./layout/navbar";
-import { Provider } from "react-redux";
-import store from "./store/store";
 import { getSession } from "~/utils/sessions.server";
 
 export const links: Route.LinksFunction = () => [
@@ -59,12 +57,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ThemeProvider>
-      <Provider store={store}>
-        <div>
-          <Navbar />
-        </div>
-        <Outlet />
-      </Provider>
+      <div>
+        <Navbar />
+      </div>
+      <Outlet />
     </ThemeProvider>
   );
 }
